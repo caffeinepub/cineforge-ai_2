@@ -1,39 +1,32 @@
 # CineForge AI
 
 ## Current State
-New project. No existing code beyond scaffold.
+The app generates a cinematic production blueprint from a manuscript. The Assembly Logic tab shows a timeline table and a marketing pack. There is an "Export Pack" button that downloads a JSON + Python script. Shot-level data (camera direction, action beats, cinematography, audio direction, character DNA) exists in the blueprint but is not surfaced in the Assembly Logic tab.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Manuscript ingestion: a large text input where users paste raw manuscripts
-- Blueprint Generator: parses the manuscript and produces a structured JSON "Production Slate" with five sections: visual_style, identity_vault, shot_list, audio_direction, assembly_logic
-- The generator runs entirely on the frontend using a deterministic rule-based engine (no external AI APIs) seeded with the Kola/Kampanda story content as a demo
-- Tab 1 "Ingest": manuscript input area + "Generate Blueprint" button
-- Tab 2 "The Vision": displays the shot_list in card format, each card showing camera direction, action beats, and cinematography notes; includes a "Copy Shot Prompt" button per card
-- Tab 3 "Identity Vault": displays character cards with visual DNA descriptions and role tags
-- Tab 4 "Audio Direction": shows layered audio prompts (ambient, rhythmic, ethereal) per scene
-- Tab 5 "Assembly Logic": timeline instructions, text hook timestamps, and the marketing launch pack (hooks, captions, hashtags)
-- Tab 6 "Rendering Lab": gallery grid placeholder for rendered assets; shows empty state with "No renders yet" message; each slot has a download button (disabled until render exists)
-- Full JSON export button: downloads the entire blueprint as a .json file
-- Backend storage: save and retrieve production slates (title + JSON blob) per user session
-- Pre-loaded demo slate based on the Kola/Kampanda "The Source" manuscript so the app is immediately useful
+- A new "Veo 3 Prompts" section in the Assembly Logic tab, rendered after the timeline table and before the marketing pack.
+- For each shot in each scene, display a fully assembled Veo 3 prompt as a single clean block of text combining:
+  - Shot description (action beat)
+  - Camera direction
+  - Cinematography style
+  - Relevant audio cues (ambient + rhythmic layers from matching audio_direction)
+  - Visual style guide (title + cinematography notes)
+  - Relevant character DNA (visual_dna of characters mentioned or all if ambiguous)
+- Each prompt card includes:
+  - Scene and shot label (e.g., "Scene 1 · Shot 2")
+  - The assembled prompt text in a monospace/code-style block
+  - A one-click "Copy" button that copies the full prompt to clipboard and shows a toast confirmation
 
 ### Modify
-- N/A (new project)
+- AssemblyLogicTab.tsx: add the Veo 3 Prompts section using blueprint data already passed as props.
 
 ### Remove
-- N/A (new project)
+- Nothing removed.
 
 ## Implementation Plan
-1. Backend: define `ProductionSlate` type with id, title, createdAt, jsonBlob fields; expose createSlate, getSlates, getSlate, deleteSlate methods
-2. Frontend: build 6-tab layout with persistent tab state
-3. Ingest tab: textarea for manuscript, generate button that runs the client-side blueprint engine, auto-populates all other tabs
-4. Vision tab: shot cards with camera direction, action beats, copy-prompt button
-5. Identity Vault tab: character grid cards with visual DNA
-6. Audio Direction tab: layered prompt display per scene
-7. Assembly Logic tab: timeline table + marketing pack section
-8. Rendering Lab tab: gallery grid with empty/placeholder states
-9. JSON export: serialize current slate and trigger browser download
-10. Backend save/load: allow saving named slates and reloading them
-11. Pre-seed demo slate for the Kola/Kampanda "The Source" story
+1. In AssemblyLogicTab.tsx, add a `buildVeo3Prompt(shot, scene, blueprint)` utility function that assembles all relevant elements into one clean text block.
+2. Render a new "Veo 3 Prompts" section after the timeline table, iterating over all scenes and their shots.
+3. Each shot card shows the assembled prompt in a scrollable pre/code block with a Copy button using the Clipboard API + sonner toast.
+4. Add deterministic `data-ocid` markers: `assembly.veo3_prompt.panel`, `assembly.veo3_copy_button.{index}`.

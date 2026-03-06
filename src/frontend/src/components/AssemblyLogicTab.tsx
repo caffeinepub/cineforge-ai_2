@@ -8,10 +8,101 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, LayoutList, Megaphone } from "lucide-react";
+import {
+  Check,
+  Copy,
+  Download,
+  LayoutList,
+  Megaphone,
+  PackageOpen,
+  Video,
+} from "lucide-react";
 import { motion } from "motion/react";
+import { useState } from "react";
 import { toast } from "sonner";
-import type { Blueprint } from "../types/blueprint";
+import type {
+  AudioDirection,
+  Blueprint,
+  Character,
+  Scene,
+  Shot,
+  VisualStyle,
+} from "../types/blueprint";
+import { exportPack } from "../utils/exportPack";
+
+function buildVeo3Prompt(
+  scene: Scene,
+  shot: Shot,
+  visualStyle: VisualStyle,
+  audioDirection: AudioDirection[],
+  identityVault: Character[],
+): string {
+  const cinNotes = visualStyle.cinematography_notes.join(", ");
+  const audio = audioDirection.find((a) => a.scene_id === scene.scene_id);
+  const audioBlock = audio
+    ? `Ambient: ${audio.ambient} | Rhythmic: ${audio.rhythmic} | Ethereal: ${audio.ethereal}`
+    : "No audio direction available";
+  const characters = identityVault
+    .map((c) => `${c.name}: ${c.visual_dna}`)
+    .join("\n");
+
+  return [
+    `[VISUAL STYLE] ${visualStyle.title} — ${cinNotes}`,
+    "",
+    `[SHOT] ${shot.action_beat}`,
+    "",
+    `[CAMERA] ${shot.camera_direction}`,
+    "",
+    `[CINEMATOGRAPHY] ${shot.cinematography} | Duration: ${shot.duration_seconds}s`,
+    "",
+    `[AUDIO] ${audioBlock}`,
+    "",
+    "[CHARACTERS]",
+    characters,
+  ].join("\n");
+}
+
+interface ShotCard {
+  scene: Scene;
+  shot: Shot;
+  sceneIndex: number;
+  shotIndex: number;
+  globalIndex: number;
+  prompt: string;
+}
+
+function CopyButton({ prompt, ocid }: { prompt: string; ocid: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(prompt);
+    setCopied(true);
+    toast.success("Prompt copied to clipboard");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Button
+      data-ocid={ocid}
+      variant="outline"
+      size="sm"
+      onClick={handleCopy}
+      className="h-8 px-3 shrink-0 border-border/60 hover:border-primary/50 hover:bg-primary/5 transition-all"
+    >
+      {copied ? (
+        <>
+          <Check className="h-3 w-3 mr-1.5 text-green-500" />
+          <span className="text-xs text-green-500">Copied</span>
+        </>
+      ) : (
+        <>
+          <Copy className="h-3 w-3 mr-1.5" />
+          <span className="text-xs">Copy</span>
+        </>
+      )}
+    </Button>
+  );
+}
 
 interface AssemblyLogicTabProps {
   blueprint: Blueprint | null;
@@ -66,14 +157,28 @@ export default function AssemblyLogicTab({
             hashtags
           </p>
         </div>
-        <Button
-          data-ocid="assembly.export_button"
-          onClick={handleExport}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-5"
-        >
-          <Download className="mr-2 h-4 w-4" />
-          Export JSON
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            data-ocid="assembly.export_pack_button"
+            variant="outline"
+            onClick={() => {
+              exportPack(blueprint, title);
+              toast.success("Export pack downloaded: JSON + Python script.");
+            }}
+            className="h-10 px-5 border-primary/40 text-primary hover:bg-primary/10 hover:border-primary/70 transition-colors"
+          >
+            <PackageOpen className="mr-2 h-4 w-4" />
+            Export Pack
+          </Button>
+          <Button
+            data-ocid="assembly.export_button"
+            onClick={handleExport}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-5"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export JSON
+          </Button>
+        </div>
       </div>
 
       {/* Timeline Table */}
@@ -135,6 +240,100 @@ export default function AssemblyLogicTab({
           </Table>
         </div>
       </motion.section>
+
+      {/* Veo 3 Prompts */}
+      {(() => {
+        const shotCards: ShotCard[] = [];
+        let globalIndex = 0;
+        blueprint.shot_list.forEach((scene, si) => {
+          scene.shots.forEach((shot, sj) => {
+            globalIndex++;
+            shotCards.push({
+              scene,
+              shot,
+              sceneIndex: si + 1,
+              shotIndex: sj + 1,
+              globalIndex,
+              prompt: buildVeo3Prompt(
+                scene,
+                shot,
+                blueprint.visual_style,
+                blueprint.audio_direction,
+                blueprint.identity_vault,
+              ),
+            });
+          });
+        });
+
+        return (
+          <motion.section
+            data-ocid="assembly.veo3_prompt.panel"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Video className="h-4 w-4 text-primary" />
+              <h3 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+                Veo 3 Prompts
+              </h3>
+              <span className="ml-1 text-xs text-muted-foreground/50">
+                — {shotCards.length} copy-ready prompt
+                {shotCards.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              {shotCards.length === 0 ? (
+                <div
+                  data-ocid="assembly.veo3_prompt.empty_state"
+                  className="bg-card border border-border rounded-lg p-8 text-center text-muted-foreground/50 text-sm"
+                >
+                  No shots found in the production slate.
+                </div>
+              ) : (
+                shotCards.map((card) => (
+                  <div
+                    key={`${card.scene.scene_id}-${card.shot.shot_id}`}
+                    data-ocid={`assembly.veo3_prompt.item.${card.globalIndex}`}
+                    className="bg-card border border-border rounded-lg overflow-hidden"
+                  >
+                    {/* Card Header */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 bg-card/80">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs font-mono font-bold text-primary shrink-0">
+                          Scene {card.sceneIndex} · Shot {card.shotIndex}
+                        </span>
+                        <span className="text-xs text-muted-foreground/50 shrink-0">
+                          —
+                        </span>
+                        <span className="text-xs text-muted-foreground truncate">
+                          {card.scene.scene_title}
+                        </span>
+                      </div>
+                      <CopyButton
+                        prompt={card.prompt}
+                        ocid={`assembly.veo3_copy_button.${card.globalIndex}`}
+                      />
+                    </div>
+
+                    {/* Prompt Block */}
+                    <pre
+                      className="text-xs font-mono leading-relaxed text-foreground/80 p-4 overflow-y-auto whitespace-pre-wrap break-words"
+                      style={{
+                        maxHeight: "300px",
+                        background: "oklch(0.14 0.01 260 / 0.6)",
+                      }}
+                    >
+                      {card.prompt}
+                    </pre>
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.section>
+        );
+      })()}
 
       {/* Marketing Pack */}
       <motion.section
