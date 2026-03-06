@@ -1,32 +1,29 @@
 # CineForge AI
 
 ## Current State
-The app generates a cinematic production blueprint from a manuscript. The Assembly Logic tab shows a timeline table and a marketing pack. There is an "Export Pack" button that downloads a JSON + Python script. Shot-level data (camera direction, action beats, cinematography, audio direction, character DNA) exists in the blueprint but is not surfaced in the Assembly Logic tab.
+The Assembly Logic tab shows:
+- Per-shot Veo 3 prompts (one card per shot, each with a Copy button)
+- Each prompt combines: visual style, shot action beat, camera direction, cinematography, audio direction, and all character DNA
 
 ## Requested Changes (Diff)
 
 ### Add
-- A new "Veo 3 Prompts" section in the Assembly Logic tab, rendered after the timeline table and before the marketing pack.
-- For each shot in each scene, display a fully assembled Veo 3 prompt as a single clean block of text combining:
-  - Shot description (action beat)
-  - Camera direction
-  - Cinematography style
-  - Relevant audio cues (ambient + rhythmic layers from matching audio_direction)
-  - Visual style guide (title + cinematography notes)
-  - Relevant character DNA (visual_dna of characters mentioned or all if ambiguous)
-- Each prompt card includes:
-  - Scene and shot label (e.g., "Scene 1 · Shot 2")
-  - The assembled prompt text in a monospace/code-style block
-  - A one-click "Copy" button that copies the full prompt to clipboard and shows a toast confirmation
+- A "Master Prompt" section at the top of the Veo 3 Prompts area in the Assembly Logic tab
+- The master prompt combines ALL scenes, ALL shots, full character vault, visual style, and audio direction into a single coherent text block
+- A one-click "Copy Master Prompt" button for the entire block
 
 ### Modify
-- AssemblyLogicTab.tsx: add the Veo 3 Prompts section using blueprint data already passed as props.
+- `AssemblyLogicTab.tsx`: Add `buildMasterPrompt()` function and a Master Prompt card rendered above the per-shot cards
 
 ### Remove
-- Nothing removed.
+- Nothing removed
 
 ## Implementation Plan
-1. In AssemblyLogicTab.tsx, add a `buildVeo3Prompt(shot, scene, blueprint)` utility function that assembles all relevant elements into one clean text block.
-2. Render a new "Veo 3 Prompts" section after the timeline table, iterating over all scenes and their shots.
-3. Each shot card shows the assembled prompt in a scrollable pre/code block with a Copy button using the Clipboard API + sonner toast.
-4. Add deterministic `data-ocid` markers: `assembly.veo3_prompt.panel`, `assembly.veo3_copy_button.{index}`.
+1. In `AssemblyLogicTab.tsx`, add a `buildMasterPrompt(blueprint)` function that:
+   - Opens with the Visual Style title, palette description, and cinematography notes
+   - Lists all characters from the identity vault (name + visual DNA)
+   - For each scene: scene title, then each shot's action beat, camera direction, cinematography, duration
+   - Appends the audio direction for each scene
+   - Appends the assembly timeline text hooks at the end
+2. Render a "Master Prompt" card above the per-shot cards in the Veo 3 Prompts section, with a prominent Copy button
+3. The card should be visually distinct (e.g. subtle gold/primary border glow) to signal it is the master/full prompt

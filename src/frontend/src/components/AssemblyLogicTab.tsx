@@ -30,6 +30,81 @@ import type {
 } from "../types/blueprint";
 import { exportPack } from "../utils/exportPack";
 
+function buildMasterPrompt(blueprint: Blueprint): string {
+  const {
+    visual_style,
+    identity_vault,
+    shot_list,
+    audio_direction,
+    assembly_logic,
+  } = blueprint;
+
+  const paletteLine = visual_style.color_palette
+    .map((c) => `  ${c.name} (${c.role}): ${c.hex}`)
+    .join("\n");
+
+  const cinNotes = visual_style.cinematography_notes.join(" | ");
+
+  const characterLines = identity_vault
+    .map((c) => `  - ${c.name} [${c.archetype}]: ${c.visual_dna}`)
+    .join("\n");
+
+  const sceneBlocks = shot_list
+    .map((scene, si) => {
+      const audio = audio_direction.find((a) => a.scene_id === scene.scene_id);
+      const shotLines = scene.shots
+        .map(
+          (shot, sj) =>
+            `  Shot ${sj + 1}:\n    ACTION: ${shot.action_beat}\n    CAMERA: ${shot.camera_direction}\n    CINEMATOGRAPHY: ${shot.cinematography} | Duration: ${shot.duration_seconds}s`,
+        )
+        .join("\n\n");
+      const audioLine = audio
+        ? `  AUDIO: Ambient: ${audio.ambient} | Rhythmic: ${audio.rhythmic} | Ethereal: ${audio.ethereal}`
+        : "";
+      return `SCENE ${si + 1} — ${scene.scene_title}\n\n${shotLines}${audioLine ? `\n\n${audioLine}` : ""}`;
+    })
+    .join(`\n\n${"─".repeat(60)}\n\n`);
+
+  const timelineLines = assembly_logic.timeline
+    .map(
+      (t) =>
+        `  ${t.timecode} — ${t.instruction}${t.text_hook ? ` "${t.text_hook}"` : ""}`,
+    )
+    .join("\n");
+
+  const { marketing } = assembly_logic;
+  const hashtagLine = marketing.hashtags.join(" ");
+
+  return [
+    `[PRODUCTION] ${visual_style.title}`,
+    `[STYLE GUIDE] ${visual_style.description}`,
+    "",
+    "[COLOR PALETTE]",
+    paletteLine,
+    "",
+    `[CINEMATOGRAPHY] ${cinNotes}`,
+    "",
+    "═".repeat(60),
+    "[CHARACTER VAULT]",
+    characterLines,
+    "",
+    "═".repeat(60),
+    "[PRODUCTION SLATE]",
+    "",
+    sceneBlocks,
+    "",
+    "═".repeat(60),
+    "[ASSEMBLY TIMELINE]",
+    timelineLines,
+    "",
+    "═".repeat(60),
+    "[MARKETING]",
+    `Hook: ${marketing.hook_9x16}`,
+    `Caption: ${marketing.caption}`,
+    `Hashtags: ${hashtagLine}`,
+  ].join("\n");
+}
+
 function buildVeo3Prompt(
   scene: Scene,
   shot: Shot,
@@ -284,6 +359,65 @@ export default function AssemblyLogicTab({
             </div>
 
             <div className="space-y-4">
+              {/* Master Prompt Card */}
+              {(() => {
+                const masterPrompt = buildMasterPrompt(blueprint);
+                return (
+                  <div
+                    data-ocid="assembly.master_prompt.card"
+                    className="bg-card border rounded-xl overflow-hidden"
+                    style={{
+                      borderColor: "oklch(0.76 0.145 75 / 0.4)",
+                      boxShadow:
+                        "0 0 20px oklch(0.76 0.145 75 / 0.15), inset 0 1px 0 oklch(0.76 0.145 75 / 0.08)",
+                    }}
+                  >
+                    {/* Card Header */}
+                    <div
+                      className="flex items-center justify-between px-4 py-3 border-b"
+                      style={{
+                        borderColor: "oklch(0.76 0.145 75 / 0.25)",
+                        background: "oklch(0.76 0.145 75 / 0.06)",
+                      }}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span
+                          className="inline-flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider"
+                          style={{ color: "oklch(0.76 0.145 75)" }}
+                        >
+                          <Video className="h-3.5 w-3.5" />
+                          Master Prompt — Full Production
+                        </span>
+                        <span
+                          className="text-xs px-2 py-0.5 rounded font-semibold"
+                          style={{
+                            background: "oklch(0.76 0.145 75 / 0.15)",
+                            color: "oklch(0.76 0.145 75)",
+                          }}
+                        >
+                          All Scenes · All Characters · Full Slate
+                        </span>
+                      </div>
+                      <CopyButton
+                        prompt={masterPrompt}
+                        ocid="assembly.master_prompt_copy_button"
+                      />
+                    </div>
+
+                    {/* Prompt Block */}
+                    <pre
+                      className="text-xs font-mono leading-relaxed text-foreground/80 p-4 overflow-y-auto whitespace-pre-wrap break-words"
+                      style={{
+                        maxHeight: "400px",
+                        background: "oklch(0.12 0.015 260 / 0.7)",
+                      }}
+                    >
+                      {masterPrompt}
+                    </pre>
+                  </div>
+                );
+              })()}
+
               {shotCards.length === 0 ? (
                 <div
                   data-ocid="assembly.veo3_prompt.empty_state"
