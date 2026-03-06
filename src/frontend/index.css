@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Fraunces Display Font ── */
+@font-face {
+  font-family: "Fraunces";
+  src: url("/assets/fonts/Fraunces.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── General Sans Body Font ── */
+@font-face {
+  font-family: "General Sans";
+  src: url("/assets/fonts/GeneralSans.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── Geist Mono ── */
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/assets/fonts/GeistMono.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --radius: 0.375rem;
+
+    /* CineForge Dark Cinematic Theme — Fertile Earth + Gold */
+    --background:        0.10 0.008 30;
+    --foreground:        0.92 0.015 60;
+    --card:              0.13 0.010 30;
+    --card-foreground:   0.92 0.015 60;
+    --popover:           0.15 0.012 30;
+    --popover-foreground: 0.92 0.015 60;
+
+    /* Primary = Ancestral Gold */
+    --primary:           0.76 0.145 75;
+    --primary-foreground: 0.10 0.008 30;
+
+    /* Secondary = Kampanda Dust */
+    --secondary:         0.22 0.015 30;
+    --secondary-foreground: 0.85 0.020 65;
+
+    /* Muted = deep shadow */
+    --muted:             0.18 0.010 30;
+    --muted-foreground:  0.55 0.020 55;
+
+    /* Accent = warm amber highlight */
+    --accent:            0.72 0.160 68;
+    --accent-foreground: 0.10 0.008 30;
+
+    --destructive:       0.58 0.22 25;
+    --destructive-foreground: 0.98 0 0;
+
+    --border:            0.22 0.018 40;
+    --input:             0.20 0.014 35;
+    --ring:              0.72 0.145 75;
+
+    /* Charts */
+    --chart-1: 0.76 0.145 75;
+    --chart-2: 0.58 0.13 200;
+    --chart-3: 0.50 0.10 140;
+    --chart-4: 0.65 0.18 50;
+    --chart-5: 0.40 0.08 30;
+
+    /* Sidebar */
+    --sidebar:                 0.11 0.008 30;
+    --sidebar-foreground:      0.92 0.015 60;
+    --sidebar-primary:         0.76 0.145 75;
+    --sidebar-primary-foreground: 0.10 0.008 30;
+    --sidebar-accent:          0.18 0.010 30;
+    --sidebar-accent-foreground: 0.85 0.020 65;
+    --sidebar-border:          0.22 0.018 40;
+    --sidebar-ring:            0.72 0.145 75;
+
+    /* CineForge Custom Tokens */
+    --gold:              0.76 0.145 75;
+    --gold-dim:          0.55 0.110 70;
+    --soil:              0.30 0.060 45;
+    --source-water:      0.48 0.085 220;
+    --plateau-dark:      0.08 0.008 30;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background-image:
+      radial-gradient(ellipse at 20% 0%, oklch(0.18 0.025 60 / 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, oklch(0.15 0.020 220 / 0.15) 0%, transparent 50%);
+    min-height: 100vh;
+  }
+
+  /* Grain overlay texture */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.35;
+  }
+}
+
+@layer components {
+  /* Gold text utility */
+  .text-gold {
+    color: oklch(var(--gold));
+  }
+  .text-gold-dim {
+    color: oklch(var(--gold-dim));
+  }
+  .border-gold {
+    border-color: oklch(var(--gold));
+  }
+  .border-gold-dim {
+    border-color: oklch(var(--gold-dim));
+  }
+  .bg-gold {
+    background-color: oklch(var(--gold));
+  }
+
+  /* Film strip border effect */
+  .film-border-left {
+    border-left: 3px solid oklch(var(--gold));
+    padding-left: 1rem;
+  }
+
+  /* Code block cinematic style */
+  .code-block {
+    @apply font-mono text-sm bg-[oklch(0.08_0.008_30)] rounded p-4 border border-border text-muted-foreground leading-relaxed;
+  }
+
+  /* Amber badge */
+  .badge-gold {
+    @apply inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-sm;
+    background-color: oklch(var(--gold) / 0.15);
+    color: oklch(var(--gold));
+    border: 1px solid oklch(var(--gold) / 0.3);
+  }
+}
